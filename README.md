@@ -49,7 +49,7 @@ Open an issue or submit a pull request.
 Tim Chen
 
 - https://www.linkedin.com/in/timychen12
-- https://facebook.com/yunnnyunnn
+- https://www.facebook.com/timychen12
 - timychen12@gmail.com
 
 ## License

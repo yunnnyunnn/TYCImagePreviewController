@@ -16,6 +16,8 @@ fileprivate enum TYCImagePreviewType {
 
 open class TYCImagePreviewController: UIViewController {
     
+    private var presentingWindow: UIWindow?
+    
     fileprivate let minimumBackgroundAlpha: CGFloat = 0.25
     fileprivate let maximumBackgroundAlpha: CGFloat = 1.0
     fileprivate let type: TYCImagePreviewType
@@ -27,7 +29,7 @@ open class TYCImagePreviewController: UIViewController {
     fileprivate var avPlayer: AVPlayer! = nil
     fileprivate var avPlayerLayer: AVPlayerLayer! = nil
     fileprivate var panGestureRecognizer: UIPanGestureRecognizer! = nil
-
+    
     public convenience init(image: UIImage) {
         self.init(imageOrVideoURL: image, type: .image)
     }
@@ -52,7 +54,7 @@ open class TYCImagePreviewController: UIViewController {
         // Set modal style so the view will be presented on current context.
         self.modalPresentationStyle = .overCurrentContext
         self.modalTransitionStyle = .crossDissolve
-
+        
     }
     
     required public init?(coder aDecoder: NSCoder) {
@@ -115,9 +117,9 @@ open class TYCImagePreviewController: UIViewController {
             // Make it replay when the video reaches an end.
             NotificationCenter.default.addObserver(self,
                                                    selector: #selector(self.playerItemDidReachEnd(notification:)), name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: self.avPlayer.currentItem)
-
+            
         }
-
+        
     }
     
     override open func viewDidAppear(_ animated: Bool) {
@@ -134,6 +136,9 @@ open class TYCImagePreviewController: UIViewController {
         if self.type == .video {
             self.avPlayer.pause()
         }
+        // Remove presenting window.
+        self.presentingWindow?.isHidden = true
+        self.presentingWindow = nil
     }
     
     override open func viewDidLayoutSubviews() {
@@ -150,7 +155,7 @@ open class TYCImagePreviewController: UIViewController {
         self.panGestureRecognizer.isEnabled = false
         self.panGestureRecognizer.isEnabled = true
     }
-
+    
     override open func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -158,6 +163,22 @@ open class TYCImagePreviewController: UIViewController {
     
     override open var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
+    }
+    
+    public func show(animated: Bool) {
+        // Use this blank view controller to present alert.
+        let blankViewController = TYCBlankViewController()
+        blankViewController.view.backgroundColor = UIColor.clear
+        
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        window.rootViewController = blankViewController
+        window.backgroundColor = UIColor.clear
+        window.windowLevel = UIWindowLevelAlert + 1
+        window.makeKeyAndVisible()
+        window.rootViewController?.present(self, animated: animated, completion: {
+            
+        })
+        self.presentingWindow = window
     }
     
     // MARK: - Gesture Handler.
@@ -177,7 +198,7 @@ open class TYCImagePreviewController: UIViewController {
         if gestureRecognizer.state == .began {
             self.initialCenter = view.center
         }
-
+        
         // if not cancelling, move the image view anyway. We will check if we need to move it back afterward.
         if gestureRecognizer.state != .cancelled {
             
@@ -215,7 +236,7 @@ open class TYCImagePreviewController: UIViewController {
                         
                     })
                 })
-
+                
             } else {
                 // Bounce back.
                 UIView.animate(withDuration: 0.25, animations: {
@@ -228,11 +249,17 @@ open class TYCImagePreviewController: UIViewController {
     }
     
     // MARK: - Notification Handler.
-
+    
     @objc fileprivate func playerItemDidReachEnd(notification: Notification) {
         if let item = notification.object as? AVPlayerItem {
             item.seek(to: kCMTimeZero)
         }
     }
+    
+}
 
+class TYCBlankViewController: UIViewController {
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return UIApplication.shared.statusBarStyle
+    }
 }

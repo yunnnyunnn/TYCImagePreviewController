@@ -28,7 +28,7 @@ Preview image:
 ```swift
 let samplePhoto = UIImage(named: "sample-photo")!
 let previewController = TYCImagePreviewController(image: samplePhoto)
-self.present(previewController, animated: true, completion: nil)
+previewController.show(animated: true)
 ```
 
 Preview video:
@@ -36,7 +36,7 @@ Preview video:
 ```swift
 let sampleVideo = Bundle.main.url(forResource: "sample-video", withExtension: "mp4")!
 let previewController = TYCImagePreviewController(videoURL: sampleVideo)
-self.present(previewController, animated: true, completion: nil)
+previewController.show(animated: true)
 ```
 
 ## Discussion

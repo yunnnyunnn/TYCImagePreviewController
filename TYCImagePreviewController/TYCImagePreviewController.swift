@@ -13,7 +13,7 @@ fileprivate enum TYCImagePreviewType {
     case image
     case video
 }
-// TODO: Double tap, pan gesture disabled for scale not = 1.0
+
 open class TYCImagePreviewController: UIViewController {
     
     private var presentingWindow: UIWindow?
@@ -29,6 +29,7 @@ open class TYCImagePreviewController: UIViewController {
     fileprivate var avPlayer: AVPlayer! = nil
     fileprivate var avPlayerLayer: AVPlayerLayer! = nil
     fileprivate var panGestureRecognizer: UIPanGestureRecognizer! = nil
+    fileprivate var doubleTapGestureRecognizer: UITapGestureRecognizer! = nil
     fileprivate var scrollView: UIScrollView! = nil
 
     public convenience init(image: UIImage) {
@@ -87,6 +88,11 @@ open class TYCImagePreviewController: UIViewController {
         // Add pan gesture.
         self.panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(self.pan(gestureRecognizer:)))
         self.scrollView.addGestureRecognizer(self.panGestureRecognizer)
+
+        // Add double tap gesture.
+        self.doubleTapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(self.tap(gestureRecognizer:)))
+        self.doubleTapGestureRecognizer.numberOfTapsRequired = 2
+        self.scrollView.addGestureRecognizer(self.doubleTapGestureRecognizer)
 
 
         if self.type == .image, let image = self.image {
@@ -257,6 +263,27 @@ open class TYCImagePreviewController: UIViewController {
         
     }
     
+    @objc fileprivate func tap(gestureRecognizer : UIPanGestureRecognizer) {
+        // Doulbe tap to zoom.
+        if self.scrollView.zoomScale == 1.0 {
+            self.scrollView.zoom(to: self.zoomRectForScale(scale: 4.0,
+                                                           center: gestureRecognizer.location(in: gestureRecognizer.view)),
+                                 animated: true)
+        } else {
+            self.scrollView.setZoomScale(1.0, animated: true)
+        }
+    }
+    
+    fileprivate func zoomRectForScale(scale: CGFloat, center: CGPoint) -> CGRect {
+        var zoomRect = CGRect.zero
+        zoomRect.size.height = imageView.frame.size.height / scale
+        zoomRect.size.width  = imageView.frame.size.width  / scale
+        let newCenter = self.imageView.convert(center, from: self.scrollView)
+        zoomRect.origin.x = newCenter.x - (zoomRect.size.width / 2.0)
+        zoomRect.origin.y = newCenter.y - (zoomRect.size.height / 2.0)
+        return zoomRect
+    }
+    
     // MARK: - Notification Handler.
     
     @objc fileprivate func playerItemDidReachEnd(notification: Notification) {
@@ -268,12 +295,17 @@ open class TYCImagePreviewController: UIViewController {
 }
 
 extension TYCImagePreviewController: UIScrollViewDelegate {
+    
     public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         if self.type == .video {
             return self.videoPreviewView
         } else {
             return self.imageView
         }
+    }
+    
+    public func scrollViewDidZoom(_ scrollView: UIScrollView) {
+        self.panGestureRecognizer.isEnabled = (scrollView.zoomScale == 1.0)
     }
 }
 

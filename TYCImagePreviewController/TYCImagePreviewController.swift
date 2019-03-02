@@ -13,7 +13,7 @@ fileprivate enum TYCImagePreviewType {
     case image
     case video
 }
-
+// TODO: Double tap, pan gesture disabled for scale not = 1.0
 open class TYCImagePreviewController: UIViewController {
     
     private var presentingWindow: UIWindow?
@@ -29,7 +29,8 @@ open class TYCImagePreviewController: UIViewController {
     fileprivate var avPlayer: AVPlayer! = nil
     fileprivate var avPlayerLayer: AVPlayerLayer! = nil
     fileprivate var panGestureRecognizer: UIPanGestureRecognizer! = nil
-    
+    fileprivate var scrollView: UIScrollView! = nil
+
     public convenience init(image: UIImage) {
         self.init(imageOrVideoURL: image, type: .image)
     }
@@ -71,38 +72,37 @@ open class TYCImagePreviewController: UIViewController {
         self.imageView = UIImageView()
         self.videoPreviewView = UIView(frame: self.view.bounds)
         
+        // Set up scroll view.
+        self.scrollView = UIScrollView()
+        self.scrollView.delegate = self
+        self.scrollView.maximumZoomScale = 6.0
+        self.scrollView.minimumZoomScale = 1.0
+        self.scrollView.showsVerticalScrollIndicator = false
+        self.scrollView.showsHorizontalScrollIndicator = false
+        self.view.addSubview(self.scrollView)
+        self.scrollView.translatesAutoresizingMaskIntoConstraints = false
+        self.view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|-0-[subview]-0-|", options: .directionLeadingToTrailing, metrics: nil, views: ["subview": self.scrollView]))
+        self.view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-0-[subview]-0-|", options: .directionLeadingToTrailing, metrics: nil, views: ["subview": self.scrollView]))
+        
+        // Add pan gesture.
+        self.panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(self.pan(gestureRecognizer:)))
+        self.scrollView.addGestureRecognizer(self.panGestureRecognizer)
+
+
         if self.type == .image, let image = self.image {
             
-            // Set up image view.
-            self.view.addSubview(self.imageView)
-            self.imageView.translatesAutoresizingMaskIntoConstraints = false
-            self.view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|-0-[subview]-0-|", options: .directionLeadingToTrailing, metrics: nil, views: ["subview": self.imageView]))
-            self.view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-0-[subview]-0-|", options: .directionLeadingToTrailing, metrics: nil, views: ["subview": self.imageView]))
-            
-            // Configure.
+            // Configure image view.
             self.imageView.image = image
             self.imageView.contentMode = .scaleAspectFit
-            self.imageView.isUserInteractionEnabled = true
-            
-            // Add pan gesture.
-            self.panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(self.pan(gestureRecognizer:)))
-            self.imageView.addGestureRecognizer(self.panGestureRecognizer)
+            self.imageView.isUserInteractionEnabled = false
+            self.imageView.frame = CGRect(origin: .zero, size: self.scrollView.bounds.size)
+            self.scrollView.addSubview(self.imageView)
             
         } else if self.type == .video, let videoURL = self.videoURL {
             
-            // Set up video preview.
-            self.view.addSubview(self.videoPreviewView)
-            self.videoPreviewView.translatesAutoresizingMaskIntoConstraints = false
-            self.view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|-0-[subview]-0-|", options: .directionLeadingToTrailing, metrics: nil, views: ["subview": self.videoPreviewView]))
-            self.view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-0-[subview]-0-|", options: .directionLeadingToTrailing, metrics: nil, views: ["subview": self.videoPreviewView]))
-            
             // Configure.
             self.videoPreviewView.backgroundColor = UIColor.clear
-            self.videoPreviewView.isUserInteractionEnabled = true
-            
-            // Add pan gesture.
-            self.panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(self.pan(gestureRecognizer:)))
-            self.videoPreviewView.addGestureRecognizer(self.panGestureRecognizer)
+            self.videoPreviewView.isUserInteractionEnabled = false
             
             // Set up player.
             self.avPlayer = AVPlayer(url: videoURL)
@@ -113,6 +113,8 @@ open class TYCImagePreviewController: UIViewController {
             
             self.avPlayerLayer.frame = self.videoPreviewView.layer.bounds
             self.videoPreviewView.layer.insertSublayer(self.avPlayerLayer, at: 0)
+            
+            self.scrollView.addSubview(self.videoPreviewView)
             
             // Make it replay when the video reaches an end.
             NotificationCenter.default.addObserver(self,
@@ -145,8 +147,13 @@ open class TYCImagePreviewController: UIViewController {
         super.viewDidLayoutSubviews()
         // Update the player frame when view size changes.
         if self.type == .video {
+            self.videoPreviewView.frame = CGRect(origin: .zero, size: self.scrollView.bounds.size)
             self.avPlayerLayer.frame = self.videoPreviewView.layer.bounds
+        } else {
+            self.imageView.frame = CGRect(origin: .zero, size: self.scrollView.bounds.size)
         }
+        // Setting the zoom scale back after layout helps position the media back to center.
+        self.scrollView.setZoomScale(1.0, animated: false)
     }
     
     open override func viewWillLayoutSubviews() {
@@ -154,6 +161,8 @@ open class TYCImagePreviewController: UIViewController {
         // Cancel the pan tracking before screen rotation happens.
         self.panGestureRecognizer.isEnabled = false
         self.panGestureRecognizer.isEnabled = true
+        // Setting the zoom scale back before layout helps position the media back to center.
+        self.scrollView.setZoomScale(1.0, animated: false)
     }
     
     override open func didReceiveMemoryWarning() {
@@ -256,6 +265,16 @@ open class TYCImagePreviewController: UIViewController {
         }
     }
     
+}
+
+extension TYCImagePreviewController: UIScrollViewDelegate {
+    public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        if self.type == .video {
+            return self.videoPreviewView
+        } else {
+            return self.imageView
+        }
+    }
 }
 
 class TYCBlankViewController: UIViewController {

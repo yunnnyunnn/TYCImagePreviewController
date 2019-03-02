@@ -22,12 +22,12 @@ class ViewController: UIViewController {
 
     @IBAction func viewImageButtonPressed(_ sender: Any) {
         let samplePhoto = UIImage(named: "sample-photo")!
-        let previewController = TYCImagePreviewController(image: samplePhoto)
+        let previewController = LightImageController(image: samplePhoto)
         previewController.show(animated: true)
     }
     @IBAction func viewVideoButtonPressed(_ sender: Any) {
         let sampleVideo = Bundle.main.url(forResource: "sample-video", withExtension: "mp4")!
-        let previewController = TYCImagePreviewController(videoURL: sampleVideo)
+        let previewController = LightImageController(videoURL: sampleVideo)
         previewController.show(animated: true)
     }
 

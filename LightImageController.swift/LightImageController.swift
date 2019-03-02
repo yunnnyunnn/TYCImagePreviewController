@@ -1,5 +1,5 @@
 //
-//  TYCImagePreviewController.swift
+//  LightImageController.swift
 //  Poweather
 //
 //  Created by Ting-Yang Chen on 1/28/18.
@@ -9,18 +9,18 @@
 import UIKit
 import AVFoundation
 
-fileprivate enum TYCImagePreviewType {
+fileprivate enum LIMediaType {
     case image
     case video
 }
 
-open class TYCImagePreviewController: UIViewController {
+open class LightImageController: UIViewController {
     
     private var presentingWindow: UIWindow?
     
     fileprivate let minimumBackgroundAlpha: CGFloat = 0.25
     fileprivate let maximumBackgroundAlpha: CGFloat = 1.0
-    fileprivate let type: TYCImagePreviewType
+    fileprivate let type: LIMediaType
     fileprivate let image: UIImage?
     fileprivate let videoURL: URL?
     fileprivate var imageView: UIImageView!
@@ -40,7 +40,7 @@ open class TYCImagePreviewController: UIViewController {
         self.init(imageOrVideoURL: videoURL, type: .video)
     }
     
-    fileprivate init(imageOrVideoURL: Any, type: TYCImagePreviewType) {
+    fileprivate init(imageOrVideoURL: Any, type: LIMediaType) {
         
         self.type = type
         if type == .image {
@@ -182,7 +182,7 @@ open class TYCImagePreviewController: UIViewController {
     
     public func show(animated: Bool) {
         // Use this blank view controller to present alert.
-        let blankViewController = TYCBlankViewController()
+        let blankViewController = LIBlankViewController()
         blankViewController.view.backgroundColor = UIColor.clear
         
         let window = UIWindow(frame: UIScreen.main.bounds)
@@ -294,7 +294,7 @@ open class TYCImagePreviewController: UIViewController {
     
 }
 
-extension TYCImagePreviewController: UIScrollViewDelegate {
+extension LightImageController: UIScrollViewDelegate {
     
     public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         if self.type == .video {
@@ -309,7 +309,7 @@ extension TYCImagePreviewController: UIScrollViewDelegate {
     }
 }
 
-class TYCBlankViewController: UIViewController {
+class LIBlankViewController: UIViewController {
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return UIApplication.shared.statusBarStyle
     }
